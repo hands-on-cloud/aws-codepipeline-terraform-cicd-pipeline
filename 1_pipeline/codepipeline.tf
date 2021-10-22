@@ -66,6 +66,7 @@ resource "aws_iam_role_policy" "codepipeline" {
             aws_codebuild_project.opa.arn,
             aws_codebuild_project.terrascan.arn,
             aws_codebuild_project.terratest.arn,
+            aws_codebuild_project.infracost.arn,
             aws_codebuild_project.tf_apply.arn
           ]
         }
@@ -124,7 +125,7 @@ resource "aws_codepipeline" "demo" {
     }
 
     action {
-      run_order        = 2
+      run_order        = 1
       name             = "checkov"
       category         = "Build"
       owner            = "AWS"
@@ -139,7 +140,7 @@ resource "aws_codepipeline" "demo" {
     }
 
     action {
-      run_order        = 3
+      run_order        = 1
       name             = "opa"
       category         = "Build"
       owner            = "AWS"
@@ -154,7 +155,7 @@ resource "aws_codepipeline" "demo" {
     }
 
     action {
-      run_order        = 4
+      run_order        = 1
       name             = "terrascan"
       category         = "Build"
       owner            = "AWS"
@@ -169,7 +170,7 @@ resource "aws_codepipeline" "demo" {
     }
 
     action {
-      run_order        = 5
+      run_order        = 2
       name             = "terratest"
       category         = "Build"
       owner            = "AWS"
@@ -180,6 +181,21 @@ resource "aws_codepipeline" "demo" {
 
       configuration = {
         ProjectName = aws_codebuild_project.terratest.name
+      }
+    }
+
+    action {
+      run_order        = 1
+      name             = "infracost"
+      category         = "Build"
+      owner            = "AWS"
+      provider         = "CodeBuild"
+      input_artifacts  = ["CodeWorkspace"]
+      output_artifacts = []
+      version          = "1"
+
+      configuration = {
+        ProjectName = aws_codebuild_project.infracost.name
       }
     }
   }
