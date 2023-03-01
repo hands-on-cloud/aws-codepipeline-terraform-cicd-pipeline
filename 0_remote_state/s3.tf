@@ -1,19 +1,9 @@
 resource "aws_s3_bucket" "remote_state" {
-  bucket = "${local.prefix}-s3"
-  acl    = "private"
-  force_destroy = true
+  #checkov:skip=CKV_AWS_144: "Cross Region Unneccessary"
+  #checkov:skip=CKV_AWS_145: "Bucket Encryption IS enabled separately"
 
-  versioning {
-    enabled = true
-  }
-  
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm     = "AES256"
-      }
-    }
-  }
+  bucket        = "${local.prefix}-${data.aws_caller_identity.current_account.id}"
+  force_destroy = true
 
   lifecycle {
     prevent_destroy = false
@@ -21,6 +11,30 @@ resource "aws_s3_bucket" "remote_state" {
 
   tags = local.common_tags
 }
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "remote_state" {
+  bucket = aws_s3_bucket.remote_state.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+    bucket_key_enabled = true
+  }
+}
+
+resource "aws_s3_bucket_versioning" "remote_state_versioning" {
+  bucket = aws_s3_bucket.remote_state.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+
+resource "aws_s3_bucket_acl" "remote_state_acl" {
+  bucket = aws_s3_bucket.remote_state.id
+  acl    = "private"
+}
+
 
 resource "aws_s3_bucket_public_access_block" "s3Public_remote_state" {
   depends_on              = [aws_s3_bucket_policy.remote_state]
@@ -88,6 +102,7 @@ POLICY
 }
 
 resource "aws_ssm_parameter" "remote_state_bucket" {
+  #checkov:skip=CKV2_AWS_34: "unneccessary for table arn"
   name  = "${local.ssm_prefix}/tf-remote-state-bucket"
   type  = "String"
   value = aws_s3_bucket.remote_state.id
