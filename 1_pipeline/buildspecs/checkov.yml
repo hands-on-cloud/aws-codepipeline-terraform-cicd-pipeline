@@ -1,0 +1,21 @@
+version: 0.2
+env:
+  variables:
+    TF_VERSION: "1.0.6"
+phases:
+  install:
+    runtime-versions:
+       python: latest
+    commands:
+      - cd /usr/bin
+      - "curl -s -qL -o terraform.zip https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip"
+      - unzip -o terraform.zip
+      - python -V
+      - pip3 install checkov
+  build:
+    commands:
+      - cd "$CODEBUILD_SRC_DIR"
+      - checkov --directory ./ --skip-check CKV_AWS_18,CKV_AWS_144
+  post_build:
+    commands:
+      - echo "Checkov test is completed on `date`"
